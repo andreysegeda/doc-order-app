@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+backend.py
+requirements.txt
+Dockerfile
+proxies.txt
+cloudflared.exe
+proxy_bridge.py
+static/

